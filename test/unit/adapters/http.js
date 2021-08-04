@@ -968,5 +968,36 @@ describe('supports http with nodejs', function () {
     });
   });
 
+  it('should timeout if server hangs after sending response headers', function (done) {
+    server = http.createServer(function (req, res) {
+      res.writeHead(200);
+      res.flushHeaders();
+    }).listen(4444, function () {
+      axios.get('http://localhost:4444/', {
+        timeout: 300
+      }).then(function () {
+        done(new Error('request should not succeed'));
+      }, function (err) {
+        // TODO: Check if err is a timeout error.
+        done();
+      });
+    });
+  });
+
+  it('should reject if server destroys connection after sending response headers', function (done) {
+    server = http.createServer(function (req, res) {
+      res.writeHead(200);
+      res.flushHeaders();
+      res.destroy();
+    }).listen(4444, function () {
+      axios.get('http://localhost:4444/').then(function (res) {
+        done(new Error('request should not succeed'));
+      }, function (err) {
+        // TODO: Check if err is a connection-aborted error.
+        done();
+      });
+    });
+  });
+
 });
 
